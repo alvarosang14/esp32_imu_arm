@@ -10,7 +10,8 @@
 			},
 			"extensions": [
 				"espressif.esp-idf-extension",
-				"espressif.esp-idf-web"
+				"espressif.esp-idf-web",
+				"llvm-vs-code-extensions.vscode-clangd"
 			]
 		}
 	},

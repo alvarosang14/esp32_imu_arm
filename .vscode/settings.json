@@ -19,12 +19,11 @@
       "inheritDefault": "hidden"
     }
   },
-  "idf.openOcdConfigs": [
-    "board/esp32-bridge.cfg"
+  "clangd.path": "${env:HOME}/.espressif/tools/esp-clangd/esp-21.1.3_20260408/esp-clangd/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=${workspaceFolder}/build"
   ],
-  "idf.port": "detect",
-  "idf.currentSetup": "/home/asantos/.espressif/v6.1/esp-idf",
-  "idf.customExtraVars": {
-    "IDF_TARGET": "esp32"
-  }
+  "idf.currentSetup": "${env:HOME}/.espressif/v6.1/esp-idf"
 }

@@ -2,6 +2,8 @@
 
 ## 1. Install ESP
 
+> Solo con la extension vale ya que este trae ya un docker con todo
+
 Install esp32 manager
 
 ``` bash
@@ -41,6 +43,8 @@ eim install
 code --install-extension espressif.esp-idf-extension
 ```
 
+OR
+
 extensions.json
 ``` json
 {
@@ -51,6 +55,13 @@ extensions.json
 ```
 
 > https://docs.espressif.com/projects/vscode-esp-idf-extension/en/latest/index.html
+
+OR
+
+Select profile clangd:
+> https://docs.espressif.com/projects/vscode-esp-idf-extension/zh_CN/latest/additionalfeatures/esp-idf-profiles.html
+
++ The url is: https://raw.githubusercontent.com/espressif/vscode-esp-idf-extension/master/profiles/esp-idf-clangd.code-profile
 
 ## 3. Start project
 
@@ -75,3 +86,9 @@ Select sample_project and:
 
 + Esta el sdk que nos permite compilar sin dependecias
   + En el caso de vscode, este mira en .devcontainer para leer un fichero de configuracion y un dockerfile.
+
+## 5. Compile
+
+El `.devconatiner` contiene un docker con las dependencias y asi no haria flata inatalar esp idf.
+
+La extension instala los settings de vscode para ajustar los controles a ella.
