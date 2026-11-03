@@ -25,5 +25,5 @@
     "--query-driver=**",
     "--compile-commands-dir=${workspaceFolder}/build"
   ],
-  "idf.currentSetup": "${env:HOME}/.espressif/v6.1/esp-idf"
+  "idf.currentSetup": "/home/asantos/.espressif/v6.1/esp-idf"
 }

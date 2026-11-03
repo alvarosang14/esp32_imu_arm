@@ -98,3 +98,19 @@ La extension instala los settings de vscode para ajustar los controles a ella.
 
 + kconfig como los de kernel. Permite como `make menuconfig` y configurar parametros depends...
 > kconfig: https://docs.espressif.com/projects/esp-idf-kconfig/en/latest/kconfiglib/language.html
+
+## 6. Hardware
+
++ I2C: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/peripherals/i2c.html
+
+## 7. idf.py
+
+``` bash
+source ~/.espressif/tools/activate_idf_v6.1.sh
+``` 
+
+``` bash
+idf.py build
+```
+
+> https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/tools/idf-py.html

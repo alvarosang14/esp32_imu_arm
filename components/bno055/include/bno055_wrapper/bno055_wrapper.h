@@ -6,6 +6,9 @@
 
 s32 bno055_init_a(void);
 
+/* Toma la lectura de referencia que bno055_read()/bno055_read_euler() restan */
+void struct_init(void);
+
 s32 bno055_read(struct bno055_accel_t *accel_out,
                 struct bno055_gyro_t *gyro_out);
 
