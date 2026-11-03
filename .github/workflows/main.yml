@@ -1,0 +1,27 @@
+name: Build firmware
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: esp-idf build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32
+          path: '.'
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: read_sensors_elf
+          path: build/*.elf
+          retention-days: 1
