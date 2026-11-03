@@ -1,0 +1,6 @@
+[submodule "components/bno055_api/BNO055"]
+	path = components/bno055_api/BNO055
+	url = https://github.com/boschsensortec/BNO055_SensorAPI.git
+[submodule "components/bno055/BNO055"]
+	path = components/bno055/BNO055
+	url = https://github.com/boschsensortec/BNO055_SensorAPI.git

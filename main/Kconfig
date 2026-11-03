@@ -1,0 +1,11 @@
+menu "esp32_imu_arm board"
+
+    config BOARD_I2C_SDA
+        int "SDA GPIO"
+        default 21
+
+    config BOARD_I2C_SCL
+        int "SCL GPIO"
+        default 22
+
+endmenu

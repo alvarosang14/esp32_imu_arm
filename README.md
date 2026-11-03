@@ -92,3 +92,9 @@ Select sample_project and:
 El `.devconatiner` contiene un docker con las dependencias y asi no haria flata inatalar esp idf.
 
 La extension instala los settings de vscode para ajustar los controles a ella.
+
++ En un componente va cualqueir cosa que se reutilice. Digamos que es un submodulo de esp
+> Estructura, ficheros y demas para compilar: https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/build-system.html
+
++ kconfig como los de kernel. Permite como `make menuconfig` y configurar parametros depends...
+> kconfig: https://docs.espressif.com/projects/esp-idf-kconfig/en/latest/kconfiglib/language.html
