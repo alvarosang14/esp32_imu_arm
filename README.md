@@ -114,3 +114,10 @@ idf.py build
 ```
 
 > https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/tools/idf-py.html
+
+## 8. Bluethoot
+
+> https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/bluetooth/esp_bt_device.html
+> https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32/api-reference/bluetooth/esp_bt_main.html
+
++ Oficial example: https://github.com/espressif/esp-idf/tree/master/examples/bluetooth/bluedroid/classic_bt/bt_spp_acceptor
