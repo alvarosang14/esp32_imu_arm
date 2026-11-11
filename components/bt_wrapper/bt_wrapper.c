@@ -12,18 +12,18 @@ static uint32_t handle = 0;
 static bool congested = false;  // link full: drop instead of queueing old data
 
 static void spp_cb(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
-    if (event == ESP_SPP_INIT_EVT)
+    if (event == ESP_SPP_INIT_EVT) {
         esp_spp_start_srv(ESP_SPP_SEC_NONE, ESP_SPP_ROLE_SLAVE, 0, "SPP");
-    else if (event == ESP_SPP_SRV_OPEN_EVT) {
+    } else if (event == ESP_SPP_SRV_OPEN_EVT) {
         congested = false;
         handle = param->srv_open.handle;
-    }
-    else if (event == ESP_SPP_CLOSE_EVT)
+    } else if (event == ESP_SPP_CLOSE_EVT) {
         handle = 0;
-    else if (event == ESP_SPP_CONG_EVT)
+    } else if (event == ESP_SPP_CONG_EVT) {
         congested = param->cong.cong;
-    else if (event == ESP_SPP_WRITE_EVT)
+    } else if (event == ESP_SPP_WRITE_EVT) {
         congested = param->write.cong;
+    }
 }
 
 void bt_setup(void) {

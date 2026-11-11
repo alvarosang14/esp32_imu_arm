@@ -16,7 +16,8 @@
 static const char *TAG = "main";
 
 static const adc_channel_t pressure_ch[PRESSURE_COUNT] = {
-    ADC_CHANNEL_4, ADC_CHANNEL_5, ADC_CHANNEL_6, ADC_CHANNEL_7};
+    CONFIG_BOARD_PRESSURE_CH0, CONFIG_BOARD_PRESSURE_CH1,
+    CONFIG_BOARD_PRESSURE_CH2, CONFIG_BOARD_PRESSURE_CH3};
 
 static volatile uint16_t pressure[PRESSURE_COUNT];
 
@@ -48,8 +49,9 @@ static void imu_task(void *arg) {
 
     while (1) {
         s32 comres = BNO055_SUCCESS;
-        for (int id = 0; id < BNO055_COUNT; id++)
+        for (int id = 0; id < BNO055_COUNT; id++) {
             comres += bno055_read_euler(id, &euler[id]);
+        }
 
         /* Only fresh data is sent: a failed read skips this sample */
         if (comres == BNO055_SUCCESS) {

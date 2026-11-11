@@ -18,4 +18,25 @@ menu "esp32_imu_arm board"
         int "I2C1 SCL GPIO"
         default 26
 
+    # Pressure sensors: ADC1 channels (CH4-CH7 = GPIO 32, 33, 34, 35)
+    config BOARD_PRESSURE_CH0
+        int "Pressure sensor 0 ADC1 channel"
+        range 0 7
+        default 4
+
+    config BOARD_PRESSURE_CH1
+        int "Pressure sensor 1 ADC1 channel"
+        range 0 7
+        default 5
+
+    config BOARD_PRESSURE_CH2
+        int "Pressure sensor 2 ADC1 channel"
+        range 0 7
+        default 6
+
+    config BOARD_PRESSURE_CH3
+        int "Pressure sensor 3 ADC1 channel"
+        range 0 7
+        default 7
+
 endmenu
