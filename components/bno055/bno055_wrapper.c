@@ -217,15 +217,27 @@ s32 bno055_convert_double(u8 id, struct bno055_accel_double_t *accel_out,
     return comres;
 }
 
+/* Angle difference in 1/16 of a degree, wrapped to [-180, 180) so that
+ * crossing 0/360 does not produce a jump */
+static s16 euler_diff(s16 value, s16 ref) {
+    s32 diff = (s32)value - ref;
+    if (diff >= 2880) {
+        diff -= 5760;
+    } else if (diff < -2880) {
+        diff += 5760;
+    }
+    return (s16)diff;
+}
+
 BNO055_RETURN_FUNCTION_TYPE bno055_read_euler(u8 id, struct bno055_euler_t *euler) {
     BNO055_RETURN_FUNCTION_TYPE comres = BNO055_SUCCESS;
 
     bno055.dev_addr = id;
     comres += bno055_read_euler_hrp(euler);
 
-    euler->h = euler->h - euler_init[id].h;
-    euler->p = euler->p - euler_init[id].p;
-    euler->r = euler->r - euler_init[id].r;
+    euler->h = euler_diff(euler->h, euler_init[id].h);
+    euler->p = euler_diff(euler->p, euler_init[id].p);
+    euler->r = euler_diff(euler->r, euler_init[id].r);
 
     return comres;
 }

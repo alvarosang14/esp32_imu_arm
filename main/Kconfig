@@ -18,16 +18,18 @@ menu "esp32_imu_arm board"
         int "I2C1 SCL GPIO"
         default 26
 
-    # Pressure sensors: ADC1 channels (CH4-CH7 = GPIO 32, 33, 34, 35)
+    # Pressure sensors: ADC1 channels. FireBeetle analog pins:
+    # A0 = GPIO36 = CH0, A1 = GPIO39 = CH3, A2 = GPIO34 = CH6, A3 = GPIO35 = CH7
+    # (GPIO32/33 are not on the headers and A4 is ADC2: not valid here)
     config BOARD_PRESSURE_CH0
         int "Pressure sensor 0 ADC1 channel"
         range 0 7
-        default 4
+        default 0
 
     config BOARD_PRESSURE_CH1
         int "Pressure sensor 1 ADC1 channel"
         range 0 7
-        default 5
+        default 3
 
     config BOARD_PRESSURE_CH2
         int "Pressure sensor 2 ADC1 channel"

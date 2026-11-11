@@ -155,10 +155,13 @@ adc_setup(ch, 2, 20000);
 
 adc_continuous_data_t data[ADC_MAX_SAMPLES];
 uint32_t n;
-if (adc_read(data, &n, 100) == ESP_OK)
-    for (int i = 0; i < n; i++)
-        if (data[i].valid)
+if (adc_read(data, &n, 100) == ESP_OK) {
+    for (int i = 0; i < n; i++) {
+        if (data[i].valid) {
             ESP_LOGI("adc", "ch%d = %lu", data[i].channel, data[i].raw_data);
+        }
+    }
+}
 ```
 
 Cuidado:
@@ -169,7 +172,7 @@ Cuidado:
 ## 10. Programa (`main/main.c`)
 
 + 3 IMU BNO055: dos en el I2C0 (ADR a GND = `0x28`, ADR a 3V3 = `0x29`) y uno en el I2C1 (`0x28`).
-+ 4 sensores de presion por ADC continuo (DMA): GPIO32, GPIO33, GPIO34, GPIO35.
++ 4 sensores de presion por ADC continuo (DMA): GPIO36, GPIO39, GPIO34, GPIO35 (A0-A3 de la FireBeetle).
 + Todo se manda por Bluetooth clasico (SPP), nombre `BT_IMU_ARM`.
 
 Pines I2C (se cambian con `idf.py menuconfig` -> *esp32_imu_arm board*):
@@ -179,12 +182,24 @@ Pines I2C (se cambian con `idf.py menuconfig` -> *esp32_imu_arm board*):
 | I2C0 | 21 | 22 | 0 y 1 |
 | I2C1 | 25 | 26 | 2 |
 
+Canales ADC1 de los sensores de presion (mismo menu de `menuconfig`):
+
+| Sensor | Canal | GPIO | Pin FireBeetle |
+|---|---|---|---|
+| 0 | 0 | 36 | A0 |
+| 1 | 3 | 39 | A1 |
+| 2 | 6 | 34 | A2 |
+| 3 | 7 | 35 | A3 |
+
+> En la FireBeetle el GPIO32 y el GPIO33 no salen a los pines, y A4 (GPIO15) es ADC2: no vale para el modo continuo.
+
 Tareas FreeRTOS:
 
 | Tarea | Que hace |
 |---|---|
 | `adc_task` | Lee los frames del DMA y guarda la ultima muestra de cada canal |
-| `imu_task` | Cada 20 ms lee el euler de los 3 IMU y manda una linea por Bluetooth |
+| `imu_task` | Cada 20 ms (`SAMPLE_PERIOD_MS`) lee el euler de los 3 IMU y publica la ultima lectura |
+| `bt_task` | Cada 20 ms (`SEND_PERIOD_MS`) coge la ultima lectura y manda una linea por Bluetooth |
 
 Linea que se manda (CSV, 50 Hz):
 
