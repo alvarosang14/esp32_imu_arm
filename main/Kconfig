@@ -1,11 +1,21 @@
 menu "esp32_imu_arm board"
 
+    # Bus 0: two IMUs
     config BOARD_I2C_SDA
-        int "SDA GPIO"
+        int "I2C0 SDA GPIO"
         default 21
 
     config BOARD_I2C_SCL
-        int "SCL GPIO"
+        int "I2C0 SCL GPIO"
         default 22
+
+    # Bus 1: one IMU 
+    config BOARD_I2C1_SDA
+        int "I2C1 SDA GPIO"
+        default 25
+
+    config BOARD_I2C1_SCL
+        int "I2C1 SCL GPIO"
+        default 26
 
 endmenu

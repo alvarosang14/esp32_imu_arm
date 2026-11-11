@@ -1,10 +1,5 @@
 menu "BNO055"
 
-    # ADR pin: GND=0x28, 3V3=0x29
-    config BNO055_I2C_ADDR
-        hex "I2C address"
-        default 0x28
-
     # Sensor fusion mode
     choice BNO055_OPMODE
         prompt "Operation mode"

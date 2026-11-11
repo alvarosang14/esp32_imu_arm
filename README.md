@@ -121,3 +121,80 @@ idf.py build
 > https://docs.espressif.com/projects/esp-idf/en/v5.0/esp32/api-reference/bluetooth/esp_bt_main.html
 
 + Oficial example: https://github.com/espressif/esp-idf/tree/master/examples/bluetooth/bluedroid/classic_bt/bt_spp_acceptor
+
+## 9. ADC
+
+> ADC: https://docs.espressif.com/projects/esp-idf/en/release-v6.1/esp32/api-reference/peripherals/adc/index.html
+
+### ADC continuo (`components/adc_wrapper`)
+
+> https://docs.espressif.com/projects/esp-idf/en/release-v6.1/esp32/api-reference/peripherals/adc/adc_continuous.html
+
++ El ADC muestrea solo, por DMA (usa el I2S0), y guarda los resultados en un *pool* interno. Nosotros leemos frames de ese pool.
++ En ESP32 el modo continuo **solo funciona con ADC1** (GPIO32-39). El ADC2 lo usa el WiFi.
++ Frecuencia: entre **20 kHz y 2 MHz** (`SOC_ADC_SAMPLE_FREQ_THRES_LOW/HIGH`).
++ Cada muestra son 12 bits. Con `ADC_ATTEN_DB_12` el rango es ~0-3.1 V.
+
+Flujo del driver:
+
+| Paso | Funcion | Que hace |
+|---|---|---|
+| 1 | `adc_continuous_new_handle()` | Crea el driver: tamaño del pool (`max_store_buf_size`) y del frame (`conv_frame_size`) |
+| 2 | `adc_continuous_config()` | Canales (patron), frecuencia y modo (`ADC_CONV_SINGLE_UNIT_1`) |
+| 3 | `adc_continuous_start()` | Empieza a convertir |
+| 4 | `adc_continuous_read()` + `adc_continuous_parse_data()` | Lee bytes crudos y los pasa a `{unit, channel, raw_data, valid}` |
+| 5 | `adc_continuous_stop()` + `adc_continuous_deinit()` | Para y libera |
+
+Uso del wrapper:
+
+``` c
+#include "adc_wrapper.h"
+
+adc_channel_t ch[] = {ADC_CHANNEL_6, ADC_CHANNEL_7}; // GPIO34, GPIO35
+adc_setup(ch, 2, 20000);
+
+adc_continuous_data_t data[ADC_MAX_SAMPLES];
+uint32_t n;
+if (adc_read(data, &n, 100) == ESP_OK)
+    for (int i = 0; i < n; i++)
+        if (data[i].valid)
+            ESP_LOGI("adc", "ch%d = %lu", data[i].channel, data[i].raw_data);
+```
+
+Cuidado:
++ `adc_read()` devuelve `ESP_ERR_INVALID_STATE` si el pool se llenó: estamos leyendo más lento de lo que convierte. Lee más a menudo o baja la frecuencia.
++ Los valores son crudos. Para pasarlos a mV hay que calibrar (`adc_cali_raw_to_voltage()`).
++ El driver no es thread-safe: usarlo desde una sola tarea.
+
+## 10. Programa (`main/main.c`)
+
++ 3 IMU BNO055: dos en el I2C0 (ADR a GND = `0x28`, ADR a 3V3 = `0x29`) y uno en el I2C1 (`0x28`).
++ 4 sensores de presion por ADC continuo (DMA): GPIO32, GPIO33, GPIO34, GPIO35.
++ Todo se manda por Bluetooth clasico (SPP), nombre `BT_IMU_ARM`.
+
+Pines I2C (se cambian con `idf.py menuconfig` -> *esp32_imu_arm board*):
+
+| Bus | SDA | SCL | IMU |
+|---|---|---|---|
+| I2C0 | 21 | 22 | 0 y 1 |
+| I2C1 | 25 | 26 | 2 |
+
+Tareas FreeRTOS:
+
+| Tarea | Que hace |
+|---|---|
+| `adc_task` | Lee los frames del DMA y guarda la ultima muestra de cada canal |
+| `imu_task` | Cada 20 ms lee el euler de los 3 IMU y manda una linea por Bluetooth |
+
+Linea que se manda (CSV, 50 Hz):
+
+```
+h0,r0,p0,h1,r1,p1,h2,r2,p2,adc0,adc1,adc2,adc3
+```
+
++ `h,r,p`: heading, roll, pitch en **1/16 de grado** (dividir entre 16). Ya llevan restada la referencia que se toma al arrancar (`struct_init()`).
++ `adc`: valor crudo de 12 bits (0-4095).
+
+Cuidado:
++ Al arrancar hay que dejar el brazo quieto ~1 s: ahi se toma la referencia.
++ Al restar el heading de dos IMU el resultado puede saltar ±360: hay que normalizarlo en el receptor.
