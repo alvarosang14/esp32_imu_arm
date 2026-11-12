@@ -35,8 +35,14 @@ void bt_setup(void) {
     esp_bt_controller_config_t cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     esp_bt_controller_init(&cfg);
     esp_bt_controller_enable(cfg.mode);
-    esp_bluedroid_init();
+    // SSP pairing hangs on this board: use legacy pairing with a fixed PIN
+    esp_bluedroid_config_t bluedroid_cfg = BT_BLUEDROID_INIT_CONFIG_DEFAULT();
+    bluedroid_cfg.ssp_en = false;
+    esp_bluedroid_init_with_cfg(&bluedroid_cfg);
     esp_bluedroid_enable();
+
+    esp_bt_pin_code_t pin = {'1', '2', '3', '4'};
+    esp_bt_gap_set_pin(ESP_BT_PIN_TYPE_FIXED, 4, pin);
 
     // Generic Access Profile
     esp_bt_gap_set_device_name("BT_IMU_ARM");

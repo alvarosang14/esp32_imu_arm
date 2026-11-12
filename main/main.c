@@ -88,6 +88,7 @@ static void bt_task(void *arg) {
                      euler[1].h, euler[1].r, euler[1].p,
                      euler[2].h, euler[2].r, euler[2].p,
                      pressure[0], pressure[1], pressure[2], pressure[3]);
+            ESP_LOGI(TAG, "BT> %s", msg);  // msg already ends with \n
             bt_send(msg);
         }
 
