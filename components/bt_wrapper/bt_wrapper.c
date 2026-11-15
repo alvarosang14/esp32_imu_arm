@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <string.h>
 
 #include "esp_bt.h"
@@ -37,12 +36,12 @@ void bt_setup(void) {
     esp_bt_controller_enable(cfg.mode);
     // SSP pairing hangs on this board: use legacy pairing with a fixed PIN
     esp_bluedroid_config_t bluedroid_cfg = BT_BLUEDROID_INIT_CONFIG_DEFAULT();
-    bluedroid_cfg.ssp_en = false;
+    bluedroid_cfg.ssp_en = true;
     esp_bluedroid_init_with_cfg(&bluedroid_cfg);
     esp_bluedroid_enable();
 
-    esp_bt_pin_code_t pin = {'1', '2', '3', '4'};
-    esp_bt_gap_set_pin(ESP_BT_PIN_TYPE_FIXED, 4, pin);
+    esp_bt_io_cap_t iocap = ESP_BT_IO_CAP_NONE;
+    esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &iocap, sizeof(uint8_t));
 
     // Generic Access Profile
     esp_bt_gap_set_device_name("BT_IMU_ARM");

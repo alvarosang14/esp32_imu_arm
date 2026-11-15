@@ -23,6 +23,16 @@ static const adc_channel_t pressure_ch[PRESSURE_COUNT] = {
 static volatile uint16_t pressure[PRESSURE_COUNT];
 static QueueHandle_t euler_queue;
 
+// ========================== HELPERS ==========================
+
+static void convert_to_string(char* msg, size_t len,
+                              const struct bno055_euler_t* euler) {
+    snprintf(msg, len, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%u,%u,%u,%u\n",
+             euler[0].h, euler[0].r, euler[0].p, euler[1].h, euler[1].r,
+             euler[1].p, euler[2].h, euler[2].r, euler[2].p, pressure[0],
+             pressure[1], pressure[2], pressure[3]);
+}
+
 // ========================== TASKS ==========================
 
 static void adc_task(void *arg) {
@@ -83,13 +93,25 @@ static void bt_task(void *arg) {
     while (1) {
         /* Peek does not empty the mailbox: nothing is sent until the first IMU sample */
         if (xQueuePeek(euler_queue, euler, 0) == pdTRUE) {
-            snprintf(msg, sizeof(msg), "%d,%d,%d,%d,%d,%d,%d,%d,%d,%u,%u,%u,%u\n",
-                     euler[0].h, euler[0].r, euler[0].p,
-                     euler[1].h, euler[1].r, euler[1].p,
-                     euler[2].h, euler[2].r, euler[2].p,
-                     pressure[0], pressure[1], pressure[2], pressure[3]);
-            ESP_LOGI(TAG, "BT> %s", msg);  // msg already ends with \n
+            convert_to_string(msg, sizeof(msg), euler);
             bt_send(msg);
+        }
+
+        xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(SEND_PERIOD_MS));
+    }
+}
+
+void serial_task(void* arg) {
+    struct bno055_euler_t euler[BNO055_COUNT];
+    char msg[128];
+    TickType_t last_wake = xTaskGetTickCount();
+
+    while (1) {
+        if (xQueuePeek(euler_queue, euler, 0) == pdTRUE) {
+            convert_to_string(msg, sizeof(msg), euler);
+            // ESP_LOGI(TAG, "BT> %s", msg);
+            // For serial
+            printf("%s", msg);
         }
 
         xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(SEND_PERIOD_MS));
