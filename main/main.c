@@ -27,10 +27,17 @@ static QueueHandle_t euler_queue;
 
 static void convert_to_string(char* msg, size_t len,
                               const struct bno055_euler_t* euler) {
-    snprintf(msg, len, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%u,%u,%u,%u\n",
+    snprintf(msg, len,
+             "INFO:\n"
+             "\tIMU_0_0: %d,%d,%d\n"
+             "\tIMU_0_1: %d,%d,%d\n"
+             "\tIMU_1_0: %d,%d,%d\n"
+             "\tIMU_1_1: %d,%d,%d\n"
+             "\tADC: %u,%u,%u,%u\n",
              euler[0].h, euler[0].r, euler[0].p, euler[1].h, euler[1].r,
-             euler[1].p, euler[2].h, euler[2].r, euler[2].p, pressure[0],
-             pressure[1], pressure[2], pressure[3]);
+             euler[1].p, euler[2].h, euler[2].r, euler[2].p, euler[3].h,
+             euler[3].r, euler[3].p, pressure[0], pressure[1], pressure[2],
+             pressure[3]);
 }
 
 // ========================== TASKS ==========================

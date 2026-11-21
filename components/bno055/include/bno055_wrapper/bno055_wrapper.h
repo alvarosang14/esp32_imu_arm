@@ -5,7 +5,7 @@
 #include "BNO055/bno055.h"
 
 /* Number of IMUs. `id` goes from 0 to BNO055_COUNT - 1 */
-#define BNO055_COUNT 3
+#define BNO055_COUNT 4
 
 /* Starts both I2C buses and the BNO055_COUNT sensors */
 s32 bno055_init_a(void);

@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "hal/i2c_types.h"
 
 #define BNO055_I2C_TIMEOUT_MS 100
 #define BNO055_I2C_FREQ_HZ 400000
@@ -15,8 +16,10 @@ static const char* TAG = "bno055";
 #define BNO055_I2C_BUS_COUNT 2
 
 /* Two IMUs share bus 0 (different ADR) and the third one is alone on bus 1 */
-static const i2c_port_num_t imu_port[BNO055_COUNT] = {I2C_NUM_0, I2C_NUM_0, I2C_NUM_1};
-static const u8 imu_addr[BNO055_COUNT] = {BNO055_I2C_ADDR1, BNO055_I2C_ADDR2, BNO055_I2C_ADDR1};
+static const i2c_port_num_t imu_port[BNO055_COUNT] = {I2C_NUM_0, I2C_NUM_0,
+                                                      I2C_NUM_1, I2C_NUM_1};
+static const u8 imu_addr[BNO055_COUNT] = {BNO055_I2C_ADDR1, BNO055_I2C_ADDR2,
+                                          BNO055_I2C_ADDR1, BNO055_I2C_ADDR2};
 
 static i2c_master_bus_handle_t s_i2c_bus[BNO055_I2C_BUS_COUNT];
 static i2c_master_dev_handle_t s_i2c_dev[BNO055_COUNT];
