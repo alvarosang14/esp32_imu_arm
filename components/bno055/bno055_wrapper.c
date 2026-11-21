@@ -13,14 +13,6 @@
 
 static const char* TAG = "bno055";
 
-#define BNO055_I2C_BUS_COUNT 2
-
-/* Two IMUs share bus 0 (different ADR) and the third one is alone on bus 1 */
-static const i2c_port_num_t imu_port[BNO055_COUNT] = {I2C_NUM_0, I2C_NUM_0,
-                                                      I2C_NUM_1, I2C_NUM_1};
-static const u8 imu_addr[BNO055_COUNT] = {BNO055_I2C_ADDR1, BNO055_I2C_ADDR2,
-                                          BNO055_I2C_ADDR1, BNO055_I2C_ADDR2};
-
 static i2c_master_bus_handle_t s_i2c_bus[BNO055_I2C_BUS_COUNT];
 static i2c_master_dev_handle_t s_i2c_dev[BNO055_COUNT];
 
@@ -78,20 +70,17 @@ static void BNO055_delay_msec(u32 msec) {
     vTaskDelay(pdMS_TO_TICKS(msec) + 1);
 }
 
-static esp_err_t BNO055_i2c_bus_init(void) {
+static esp_err_t BNO055_i2c_bus_init(const bno055_bus_t bus[BNO055_I2C_BUS_COUNT]) {
     if (s_i2c_bus[I2C_NUM_0] != NULL) {
         return ESP_OK;
     }
-
-    const int sda[BNO055_I2C_BUS_COUNT] = {CONFIG_BOARD_I2C_SDA, CONFIG_BOARD_I2C1_SDA};
-    const int scl[BNO055_I2C_BUS_COUNT] = {CONFIG_BOARD_I2C_SCL, CONFIG_BOARD_I2C1_SCL};
 
     for (int port = 0; port < BNO055_I2C_BUS_COUNT; port++) {
         i2c_master_bus_config_t bus_cfg = {
             .clk_source = I2C_CLK_SRC_DEFAULT,
             .i2c_port = port,
-            .sda_io_num = sda[port],
-            .scl_io_num = scl[port],
+            .sda_io_num = bus[port].sda,
+            .scl_io_num = bus[port].scl,
             .glitch_ignore_cnt = 7,
             .flags.enable_internal_pullup = true,
         };
@@ -101,19 +90,21 @@ static esp_err_t BNO055_i2c_bus_init(void) {
             ESP_LOGE(TAG, "i2c_new_master_bus %d: %s", port, esp_err_to_name(err));
             return err;
         }
-    }
 
-    for (int id = 0; id < BNO055_COUNT; id++) {
-        i2c_device_config_t dev_cfg = {
-            .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-            .device_address = imu_addr[id],
-            .scl_speed_hz = BNO055_I2C_FREQ_HZ,
-        };
+        /* id = port * BNO055_IMUS_PER_BUS + slot */
+        for (int slot = 0; slot < BNO055_IMUS_PER_BUS; slot++) {
+            int id = port * BNO055_IMUS_PER_BUS + slot;
+            i2c_device_config_t dev_cfg = {
+                .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+                .device_address = bus[port].addr[slot],
+                .scl_speed_hz = BNO055_I2C_FREQ_HZ,
+            };
 
-        esp_err_t err = i2c_master_bus_add_device(s_i2c_bus[imu_port[id]], &dev_cfg, &s_i2c_dev[id]);
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "i2c_master_bus_add_device %d: %s", id, esp_err_to_name(err));
-            return err;
+            err = i2c_master_bus_add_device(s_i2c_bus[port], &dev_cfg, &s_i2c_dev[id]);
+            if (err != ESP_OK) {
+                ESP_LOGE(TAG, "i2c_master_bus_add_device %d: %s", id, esp_err_to_name(err));
+                return err;
+            }
         }
     }
 
@@ -141,10 +132,10 @@ void struct_init(void) {
     }
 }
 
-s32 bno055_init_a(void) {
+s32 bno055_init_a(const bno055_bus_t bus[BNO055_I2C_BUS_COUNT]) {
     s32 comres = BNO055_ERROR;
 
-    if (BNO055_i2c_bus_init() != ESP_OK) {
+    if (BNO055_i2c_bus_init(bus) != ESP_OK) {
         return BNO055_ERROR;
     }
 

@@ -1,26 +1,7 @@
 menu "esp32_imu_arm board"
 
-    # Bus 0: two IMUs
-    config BOARD_I2C_SDA
-        int "I2C0 SDA GPIO"
-        default 21
-
-    config BOARD_I2C_SCL
-        int "I2C0 SCL GPIO"
-        default 22
-
-    # Bus 1: one IMU 
-    config BOARD_I2C1_SDA
-        int "I2C1 SDA GPIO"
-        default 25
-
-    config BOARD_I2C1_SCL
-        int "I2C1 SCL GPIO"
-        default 26
-
-    # Pressure sensors: ADC1 channels. FireBeetle analog pins:
+    # Pressure sensors
     # A0 = GPIO36 = CH0, A1 = GPIO39 = CH3, A2 = GPIO34 = CH6, A3 = GPIO35 = CH7
-    # (GPIO32/33 are not on the headers and A4 is ADC2: not valid here)
     config BOARD_PRESSURE_CH0
         int "Pressure sensor 0 ADC1 channel"
         range 0 7
@@ -41,4 +22,29 @@ menu "esp32_imu_arm board"
         range 0 7
         default 7
 
+    # I2C buses
+    config BNO055_I2C0_SDA
+        int "I2C0 SDA GPIO"
+        default 21
+
+    config BNO055_I2C0_SCL
+        int "I2C0 SCL GPIO"
+        default 22
+
+    config BNO055_I2C1_SDA
+        int "I2C1 SDA GPIO"
+        default 25
+
+    config BNO055_I2C1_SCL
+        int "I2C1 SCL GPIO"
+        default 26
+
+    # BNO055 addresses
+    config BNO055_ADDR1
+        hex "IMU address with ADR low"
+        default 0x28
+
+    config BNO055_ADDR2
+        hex "IMU address with ADR high"
+        default 0x29
 endmenu

@@ -17,9 +17,21 @@
 // ========================== ADCS AND GLOBAL VARIABLES ==========================
 
 static const char *TAG = "main";
+
+// ADC
 static const adc_channel_t pressure_ch[PRESSURE_COUNT] = {
     CONFIG_BOARD_PRESSURE_CH0, CONFIG_BOARD_PRESSURE_CH1,
     CONFIG_BOARD_PRESSURE_CH2, CONFIG_BOARD_PRESSURE_CH3};
+
+// I2C: [bus] -> pins and address of each IMU on it
+static const bno055_bus_t i2c_bus[BNO055_I2C_BUS_COUNT] = {
+    {CONFIG_BNO055_I2C0_SDA, CONFIG_BNO055_I2C0_SCL,
+     {CONFIG_BNO055_ADDR1, CONFIG_BNO055_ADDR2}},
+    {CONFIG_BNO055_I2C1_SDA, CONFIG_BNO055_I2C1_SCL,
+     {CONFIG_BNO055_ADDR1, CONFIG_BNO055_ADDR2}},
+};
+
+// Datas
 static volatile uint16_t pressure[PRESSURE_COUNT];
 static QueueHandle_t euler_queue;
 
@@ -129,7 +141,7 @@ void serial_task(void* arg) {
 
 void app_main(void) {
     // BNO055
-    if (bno055_init_a() != BNO055_SUCCESS) {
+    if (bno055_init_a(i2c_bus) != BNO055_SUCCESS) {
         ESP_LOGE(TAG, "A BNO055 is not responding (check SDA/SCL of both buses and the ADR pins)");
         return;
     }
