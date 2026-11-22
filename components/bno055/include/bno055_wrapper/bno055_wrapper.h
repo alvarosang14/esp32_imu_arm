@@ -17,22 +17,23 @@ typedef struct {
     u8 addr[BNO055_IMUS_PER_BUS];
 } bno055_bus_t;
 
-/* Starts the I2C buses and the BNO055_COUNT sensors */
+/* Starts the I2C buses and the BNO055_COUNT sensors in NDOF mode */
 s32 bno055_init_a(const bno055_bus_t bus[BNO055_I2C_BUS_COUNT]);
 
-/* Takes the reference reading that bno055_read()/bno055_read_euler() subtract */
-void struct_init(void);
+/* Takes the reference orientation that bno055_read_quat() subtracts.
+ * Call it with the arm still: waits for the gyros to be calibrated first */
+s32 struct_init(void);
 
-s32 bno055_read(u8 id, struct bno055_accel_t *accel_out,
-                struct bno055_gyro_t *gyro_out);
+/* Fusion quaternion relative to the struct_init() reference: q * q_init^-1.
+ * 1 = 2^14 (16384); it is 16384,0,0,0 in the reference position.
+ * A failed or invalid read returns an error and leaves `quat` untouched */
+BNO055_RETURN_FUNCTION_TYPE bno055_read_quat(u8 id, struct bno055_quaternion_t *quat);
 
-s32 bno055_convert_double(u8 id, struct bno055_accel_double_t *accel_out,
-                          struct bno055_gyro_double_t *gyro_out);
+/* Resets the bus of `id` and sets the sensor up again (after repeated failures) */
+s32 bno055_recover(u8 id);
 
-/* Euler in 1/16 of a degree */
-BNO055_RETURN_FUNCTION_TYPE bno055_read_euler(u8 id, struct bno055_euler_t *euler);
-
-/* Suspends all the sensors */
-s32 bno055_stop(void);
+/* Saves the calibration of `id` in NVS the first time gyro and mag are fully
+ * calibrated. Does nothing once a profile exists (loaded at boot or saved) */
+void bno055_save_calib_if_ready(u8 id);
 
 #endif

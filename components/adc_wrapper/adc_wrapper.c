@@ -63,14 +63,3 @@ esp_err_t adc_read(adc_continuous_data_t *out, uint32_t *num, uint32_t timeout_m
     // Parse the raw bytes into {unit, channel, raw_data, valid}
     return adc_continuous_parse_data(handle, raw, len, out, num);
 }
-
-esp_err_t adc_stop(void) {
-    if (!handle) {
-        return ESP_ERR_INVALID_STATE;
-    }
-
-    adc_continuous_stop(handle);
-    esp_err_t err = adc_continuous_deinit(handle);
-    handle = NULL;
-    return err;
-}

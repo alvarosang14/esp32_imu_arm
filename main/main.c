@@ -13,6 +13,9 @@
 #define ADC_FREQ_HZ      20000  // ESP32 minimum: 5 kHz per channel
 #define SAMPLE_PERIOD_MS 20     // 50 Hz IMU reading
 #define SEND_PERIOD_MS   20     // 50 Hz over Bluetooth
+#define SERIAL_PERIOD_MS 1000   // 1 Hz over serial
+#define REF_DELAY_MS     3000   // arm still: let the fusion settle before the reference
+#define IMU_MAX_FAILS    10     // consecutive failed reads (200 ms) before re-init
 
 // ========================== ADCS AND GLOBAL VARIABLES ==========================
 
@@ -33,23 +36,28 @@ static const bno055_bus_t i2c_bus[BNO055_I2C_BUS_COUNT] = {
 
 // Datas
 static volatile uint16_t pressure[PRESSURE_COUNT];
-static QueueHandle_t euler_queue;
+static QueueHandle_t imu_queue;
+
+// One reading of all the IMUs
+typedef struct {
+    struct bno055_quaternion_t quat[BNO055_COUNT];
+} imu_sample_t;
 
 // ========================== HELPERS ==========================
 
-static void convert_to_string(char* msg, size_t len,
-                              const struct bno055_euler_t* euler) {
+/* IMU_x_y: quaternion w,x,y,z relative to the boot position (1 = 16384) */
+static void convert_to_string(char* msg, size_t len, const imu_sample_t* imu) {
+    const struct bno055_quaternion_t* q = imu->quat;
     snprintf(msg, len,
              "INFO:\n"
-             "\tIMU_0_0: %d,%d,%d\n"
-             "\tIMU_0_1: %d,%d,%d\n"
-             "\tIMU_1_0: %d,%d,%d\n"
-             "\tIMU_1_1: %d,%d,%d\n"
+             "\tIMU_0_0: %d,%d,%d,%d\n"
+             "\tIMU_0_1: %d,%d,%d,%d\n"
+             "\tIMU_1_0: %d,%d,%d,%d\n"
+             "\tIMU_1_1: %d,%d,%d,%d\n"
              "\tADC: %u,%u,%u,%u\n",
-             euler[0].h, euler[0].r, euler[0].p, euler[1].h, euler[1].r,
-             euler[1].p, euler[2].h, euler[2].r, euler[2].p, euler[3].h,
-             euler[3].r, euler[3].p, pressure[0], pressure[1], pressure[2],
-             pressure[3]);
+             q[0].w, q[0].x, q[0].y, q[0].z, q[1].w, q[1].x, q[1].y, q[1].z,
+             q[2].w, q[2].x, q[2].y, q[2].z, q[3].w, q[3].x, q[3].y, q[3].z,
+             pressure[0], pressure[1], pressure[2], pressure[3]);
 }
 
 // ========================== TASKS ==========================
@@ -75,19 +83,32 @@ static void adc_task(void *arg) {
 }
 
 static void imu_task(void *arg) {
-    struct bno055_euler_t euler[BNO055_COUNT];
+    imu_sample_t imu;
     TickType_t last_wake = xTaskGetTickCount();
     bool failing = false;  // log only when the state changes, not every sample
+    int fails[BNO055_COUNT] = {0};
 
     while (1) {
         s32 comres = BNO055_SUCCESS;
         for (int id = 0; id < BNO055_COUNT; id++) {
-            comres += bno055_read_euler(id, &euler[id]);
+            if (bno055_read_quat(id, &imu.quat[id]) == BNO055_SUCCESS) {
+                fails[id] = 0;
+                bno055_save_calib_if_ready(id);
+                continue;
+            }
+
+            /* Stuck bus or sensor reset by itself: set it up again. NDOF is
+             * absolute, so the boot reference is still valid afterwards */
+            comres = BNO055_ERROR;
+            if (++fails[id] >= IMU_MAX_FAILS) {
+                bno055_recover(id);
+                fails[id] = 0;
+            }
         }
 
         /* Only fresh data is published: a failed read keeps the previous sample */
         if (comres == BNO055_SUCCESS) {
-            xQueueOverwrite(euler_queue, euler);
+            xQueueOverwrite(imu_queue, &imu);
             if (failing) {
                 ESP_LOGI(TAG, "IMU read recovered");
             }
@@ -105,14 +126,14 @@ static void imu_task(void *arg) {
 
 // Task on top of a task bt_send only queues the message
 static void bt_task(void *arg) {
-    struct bno055_euler_t euler[BNO055_COUNT];
-    char msg[128];
+    imu_sample_t imu;
+    char msg[320];
     TickType_t last_wake = xTaskGetTickCount();
 
     while (1) {
         /* Peek does not empty the mailbox: nothing is sent until the first IMU sample */
-        if (xQueuePeek(euler_queue, euler, 0) == pdTRUE) {
-            convert_to_string(msg, sizeof(msg), euler);
+        if (xQueuePeek(imu_queue, &imu, 0) == pdTRUE) {
+            convert_to_string(msg, sizeof(msg), &imu);
             bt_send(msg);
         }
 
@@ -120,20 +141,18 @@ static void bt_task(void *arg) {
     }
 }
 
-void serial_task(void* arg) {
-    struct bno055_euler_t euler[BNO055_COUNT];
-    char msg[128];
+static void serial_task(void* arg) {
+    imu_sample_t imu;
+    char msg[320];
     TickType_t last_wake = xTaskGetTickCount();
 
     while (1) {
-        if (xQueuePeek(euler_queue, euler, 0) == pdTRUE) {
-            convert_to_string(msg, sizeof(msg), euler);
-            // ESP_LOGI(TAG, "BT> %s", msg);
-            // For serial
+        if (xQueuePeek(imu_queue, &imu, 0) == pdTRUE) {
+            convert_to_string(msg, sizeof(msg), &imu);
             printf("%s", msg);
         }
 
-        xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(SEND_PERIOD_MS));
+        xTaskDelayUntil(&last_wake, pdMS_TO_TICKS(SERIAL_PERIOD_MS));
     }
 }
 
@@ -146,8 +165,11 @@ void app_main(void) {
         return;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    struct_init();
+    vTaskDelay(pdMS_TO_TICKS(REF_DELAY_MS));
+    if (struct_init() != BNO055_SUCCESS) {
+        ESP_LOGE(TAG, "Could not take the BNO055 reference");
+        return;
+    }
 
     // ADC
     esp_err_t err_adc = adc_setup(pressure_ch, PRESSURE_COUNT, ADC_FREQ_HZ);
@@ -158,10 +180,13 @@ void app_main(void) {
     
     // BT
     bt_setup();
+    esp_log_level_set("BT_HCI", ESP_LOG_ERROR);   // sniff/unsniff are not errors
+    esp_log_level_set("BT_APPL", ESP_LOG_ERROR);
 
     // TASKS
-    euler_queue = xQueueCreate(1, sizeof(struct bno055_euler_t[BNO055_COUNT]));
+    imu_queue = xQueueCreate(1, sizeof(imu_sample_t));
     xTaskCreate(adc_task, "adc", 4096, NULL, 5, NULL);
     xTaskCreate(imu_task, "imu", 4096, NULL, 5, NULL);
     xTaskCreate(bt_task, "bt", 4096, NULL, 5, NULL);
+    xTaskCreate(serial_task, "serial", 4096, NULL, 5, NULL);
 }

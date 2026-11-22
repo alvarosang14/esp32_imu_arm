@@ -9,6 +9,5 @@
 
 esp_err_t adc_setup(const adc_channel_t *channels, uint8_t num, uint32_t freq_hz);
 esp_err_t adc_read(adc_continuous_data_t *out, uint32_t *num, uint32_t timeout_ms);
-esp_err_t adc_stop(void);
 
 #endif // ADC_WRAPPER_H
